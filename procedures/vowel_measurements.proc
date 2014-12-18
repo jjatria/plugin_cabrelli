@@ -1,0 +1,32 @@
+# 6. [ ] Make measurements for vowels:
+# 
+#    * [ ] F0 (cc) in Hz and Mel with semi-auto script
+# 
+#    * [ ] F1-F3 in Hz and Mel using semi-auto script
+# 
+#    * [ ] Relative intensity
+# 
+#    * [ ] Duration (absolute and relative)
+# 
+#    * [ ] Percentage of voicing
+
+procedure cabrelli_periodicityMeassures (.start, .end)
+  .sound = if numberOfSElected("Sound") then selected("Sound") else 0 fi
+  if !.sound
+    .pitch = if numberOfSElected("Pitch") then selected("Pitch") else 0 fi
+    if !pitch
+      @_makePitch()
+      .pitch = '_makePitch.id'
+    endif
+
+    
+  else
+    # No Sound selected; this is a BAD thing
+  endif
+endproc
+
+procedure _makePitch ()
+  include ../../plugin_jjatools/procedures/pitch_two-pass.proc
+  @pitchTwoPass(0.75, 1.5)
+  .id = pitchTwoPass.id
+endproc

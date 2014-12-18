@@ -1,0 +1,17 @@
+# include ../../plugin_jjatools/procedures/
+
+sound = selected$
+
+# 7. [ ] Make measurements for fricatives:
+# 
+#    * [ ] Centre of gravity
+# 
+#    * [ ] Standard deviation
+# 
+#    * [ ] Kurtosis
+# 
+#    * [ ] Skewness
+
+procedure cabrelli_spectralMeassures ()
+
+endproc

@@ -1,42 +1,40 @@
 Roadmap
 =======
 
-1. Move interval boundaries to nearest zero crossing
+1. [x] Move interval boundaries to nearest zero crossing
 
-2. Save all labeled intervals
+2. [x] Normalize average amplitude of files to 70dB
 
-3. Normalize average amplitude of files to 70dB
+3. [ ] Ramp the first and last 15ms of the file
 
-   * Maybe use RMS instead of peak normalisation
+4. [x] Save all labeled intervals
 
-4. Ramp the first and last 15ms of the file
+5. [ ] Labeling
 
-5. Make measurements per relevant interval:
+   * [ ] Generate TextGrid per file
 
-   * F0 (cc) in Hz and Mel with semi-auto script
+   * [ ] Pause for labeling
 
-   * F1-F3 in Hz and Mel using semi-auto script
+   * [ ] Run (semi-auto?) analysis
 
-   * Relative intensity
+6. [ ] Make measurements for vowels:
 
-   * Duration (absolute and relative)
+   * [ ] F0 (cc) in Hz and Mel with semi-auto script
 
-   * Percentage of voicing
+   * [ ] F1-F3 in Hz and Mel using semi-auto script
 
-6. Labeling
+   * [ ] Relative intensity
 
-   * Generate TextGrid per file
+   * [ ] Duration (absolute and relative)
 
-   * Pause for labeling
+   * [ ] Percentage of voicing
 
-   * Run (semi-auto?) analysis
+7. [ ] Make measurements for fricatives:
 
-7. More measurements (midpoints? avg. over segment?):
+   * [ ] Centre of gravity
 
-   * Centre of gravity
+   * [ ] Standard deviation
 
-   * Standard deviation
+   * [ ] Kurtosis
 
-   * Kurtosis
-
-   * Skewness
+   * [ ] Skewness
