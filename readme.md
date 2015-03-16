@@ -9,13 +9,11 @@ Roadmap
 
 4. [x] Save all labeled intervals
 
-5. [ ] Labeling
+5. [x] Labeling
 
-   * [ ] Generate TextGrid per file
+   * [x] Generate TextGrid per file
 
-   * [ ] Pause for labeling
-
-   * [ ] Run (semi-auto?) analysis
+   * [x] Pause for labeling
 
 6. [ ] Make measurements for vowels:
 

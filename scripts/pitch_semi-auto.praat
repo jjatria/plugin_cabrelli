@@ -42,6 +42,7 @@
 
 include ../../plugin_jjatools/procedures/check_directory.proc
 include ../../plugin_jjatools/procedures/pitch_two-pass.proc
+include ../../plugin_jjatools/procedures/find_in_strings.proc
 jjatools$ = "../../plugin_jjatools/"
 
 form Semi-auto pitch detection...
@@ -49,13 +50,12 @@ form Semi-auto pitch detection...
   sentence TextGrid_directory
   sentence Output_directory
   boolean  Use_TextGrids 0
-  integer  Start_from_file 1 (=0 for first without Pitch)
   real     left_Default_pitch_range_(Hz)  75
   real     right_Default_pitch_range_(Hz) 600
   comment  Set either to 0 for automatic per-utterance estimation
 endform
 
-# Set default values for floor and ceiling
+# Set default values
 default.pitch_floor   = left_Default_pitch_range
 default.pitch_ceiling = right_Default_pitch_range
 
@@ -64,11 +64,12 @@ default.pitch_ceiling = right_Default_pitch_range
 sound_path$ = checkDirectory.name$
 
 # Generate a sound list using full paths
-sound_list = Create Strings as file list: "sounds",
-  ... sound_path$ + "*wav"
-runScript: jjatools$ + "strings/replace_strings.praat",
-  ... "^(.*)", sound_path$ + "\1", 1
-sound_full_list = Rename: "sounds_fullpath"
+runScript: jjatools$ + "strings/file_list_full_path.praat", 
+  ... "sounds_fullpath", sound_path$, "*wav", 1
+sound_list      = selected(1)
+sound_full_list = selected(2)
+selectObject: sound_list
+total_sounds = Get number of strings
 
 # If we are using TextGrids, process them as well
 if use_TextGrids
@@ -76,20 +77,21 @@ if use_TextGrids
   textgrid_path$ = checkDirectory.name$
 
   # Generate an annotation list using full paths
-  textgrid_list = Create Strings as file list: "textgrids",
-    ... textgrid_path$ + "*TextGrid"
-  runScript: jjatools$ + "strings/replace_strings.praat",
-    ... "^(.*)", textgrid_path$ + "\1", 1
-  # removeObject: textgrid_list
-  textgrid_full_list = Rename: "textgrids_fullpath"
+  runScript: jjatools$ + "strings/file_list_full_path.praat", 
+    ... "textgrids_fullpath", textgrid_path$, "*TextGrid", 1
+  textgrid_list      = selected(1)
+  textgrid_full_list = selected(2)
 
   # Generate an aggregated full-path list for Sounds and TextGrids
   selectObject: sound_full_list, textgrid_full_list
   files = Append
+  Rename: "file_list"
   removeObject: sound_full_list, textgrid_full_list
 else
   # If we are not using TextGrids, the file list will only have sounds
   files = sound_full_list
+  selectObject: files
+  Rename: "file_list"
 endif
 
 # Provide a GUI selector for the output directory
@@ -100,39 +102,28 @@ pitch_path$ = checkDirectory.name$
 # check whether a specific Sound has a Pitch object associated with it
 pitch_list = Create Strings as file list: "pitchs",
   ... pitch_path$ + "*Pitch"
+total_pitchs = Get number of strings
+
+if total_pitchs
+  beginPause: "Pitch objects found"
+  comment: "The output directory already contains some Pitch objects"
+  comment: "Do you want to continue from the first unpaired Sound?"
+  button = endPause: "Cancel", "Continue", "From start", 2, 1
+  if button = 1
+    @cleanUp()
+    exit
+  elsif button = 2
+    @findFirstUnpaired()
+  elsif button = 3
+    viewEach.start_from = 1
+  endif
+else
+  viewEach.start_from = 1
+endif
 
 # Initialise the object list, which will keep information about processed files
 object_list = Create Table with column names: "object_list", 0,
   ... "name floor ceiling pitch notes"
-
-# The user may choose to start from whichever sound does not have a Pitch object
-# associated with it. In that case, we loop through the sounds to find which one
-# that is
-if !start_from_file
-  i = 0
-  selectObject: sound_list
-  total_sounds = Get number of strings
-  repeat
-    i += 1
-    name$ = Get string: i
-    found = !fileReadable(pitch_path$ + name$ - "wav" + "Pitch")
-  until i > total_sounds or found
-  if !found
-    # If all sound files have a Pitch object, then no work is needed, and we can
-    # exit
-    exitScript: "All Sound objects have a Pitch object"
-  else
-    # If we found the appropriate file, then use that as a starting point
-    start_from_file = i
-  endif
-endif
-
-removeObject: sound_list
-if use_TextGrids
-  removeObject: textgrid_list
-endif
-
-viewEach.start_from = start_from_file
 
 # Procedure overrides
 #
@@ -260,7 +251,7 @@ procedure viewEach_pause ()
     Set string value:  .object_row, "notes",   notes$
 
     .pitch = undefined
-    if !local.has_pitch and .button = .forward
+    if !local.has_pitch and (.button = .forward or .button = .edit_pitch)
       selectObject: viewEach.base
       .pitch = To Pitch: 0, local.pitch_floor, local.pitch_ceiling
     endif
@@ -338,10 +329,18 @@ include ../../plugin_jjatools/procedures/view_each.from_disk.proc
 @viewEachFromDisk(files, 1)
 
 # Clean up.
-removeObject: object_list, pitch_list
+@cleanUp()
 
 # Local procedures
 # These procedures are only used for this script
+
+procedure cleanUp ()
+  nocheck removeObject: files
+  nocheck removeObject: sound_list
+  nocheck removeObject: textgrid_list
+  nocheck removeObject: object_list
+  nocheck removeObject: pitch_list
+endproc
 
 # Estimate pitch floor and ceiling values from utterance
 procedure twoPass (.id)
@@ -364,8 +363,26 @@ endproc
 # Check whether a Pitch object with that name exists
 procedure pitchExists (.name$)
   selectObject: pitch_list
-  Sort
-  .words = To WordList
-  .return = Has word: .name$
-  removeObject: .words
+  @findInStrings(.name$, 0
+  .return = findInStrings.return
+endproc
+
+procedure findFirstUnpaired ()
+  .i = 0
+
+  repeat
+    .i += 1
+    selectObject: sound_list
+    .name$ = Get string: .i
+    selectObject: pitch_list
+    @findInStrings(.name$ - "wav" + "Pitch" , 0)
+    .exists = findInStrings.return
+  until .i = total_sounds or !.exists
+
+  if .exists
+    @cleanUp()
+    exitScript: "No unpaired Sound objects." + newline$
+  else
+    viewEach.start_from = .i
+  endif
 endproc
